@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宿泊事業計画 - 自動計算システム</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .input-group {
+            transition: all 0.3s ease;
+        }
+        .input-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .chart-container {
+            height: 400px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="gradient-bg py-8">
+        <div class="container mx-auto px-4">
+            <div class="text-center text-white mb-8">
+                <h1 class="text-4xl font-bold mb-2">
+                    <i class="fas fa-building mr-3"></i>
+                    宿泊事業計画システム
+                </h1>
+                <p class="text-xl opacity-90">収益性分析・投資回収計算ツール</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- 入力パネル -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- 基本設定 -->
+            <div class="card rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-bed text-blue-600 mr-2"></i>
+                    基本設定
+                </h2>
+                <div class="space-y-4">
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">客室数</label>
+                        <input type="number" id="roomCount" value="30" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">稼働率 (%)</label>
+                        <input type="number" id="occupancyRate" value="65" min="0" max="100" step="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">平日標準客室単価 (円)</label>
+                        <input type="number" id="weekdayRate" value="13000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">休日標準客室単価 (円)</label>
+                        <input type="number" id="holidayRate" value="18000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">OTA手数料率 (%)</label>
+                        <input type="number" id="otaCommission" value="15" min="0" max="50" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 運営費用 -->
+            <div class="card rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-calculator text-green-600 mr-2"></i>
+                    月次運営費用
+                </h2>
+                <div class="space-y-4">
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">清掃費原価 (1室/円)</label>
+                        <input type="number" id="cleaningCost" value="1000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">通信費 (円)</label>
+                        <input type="number" id="communicationCost" value="20000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">消耗品費 (円)</label>
+                        <input type="number" id="consumablesCost" value="50000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">リネン費 (円)</label>
+                        <input type="number" id="linenCost" value="100000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">人件費 (円)</label>
+                        <input type="number" id="laborCost" value="833333" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 初期投資・その他費用 -->
+            <div class="card rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-chart-line text-purple-600 mr-2"></i>
+                    初期投資・その他費用
+                </h2>
+                <div class="space-y-4">
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">土地費用 (円)</label>
+                        <input type="number" id="landCost" value="400000000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">物件価格 (円)</label>
+                        <input type="number" id="propertyPrice" value="300000000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">リフォーム費 (円)</label>
+                        <input type="number" id="renovationCost" value="0" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">家具・家電 (円)</label>
+                        <input type="number" id="furnitureCost" value="50000000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">諸費用 (円)</label>
+                        <input type="number" id="miscCost" value="5000000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 追加費用項目 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="card rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-wrench text-orange-600 mr-2"></i>
+                    追加月次費用
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">減価償却費 (円)</label>
+                        <input type="number" id="depreciationCost" value="1909722" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">固定資産税 (円)</label>
+                        <input type="number" id="propertyTax" value="320833" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">保険料 (円)</label>
+                        <input type="number" id="insuranceCost" value="68750" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">施設メンテナンス費 (円)</label>
+                        <input type="number" id="maintenanceCost" value="229167" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div class="input-group">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">水光熱費 (円)</label>
+                        <input type="number" id="utilitiesCost" value="250000" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 計算結果サマリー -->
+            <div class="card rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-chart-bar text-red-600 mr-2"></i>
+                    計算結果サマリー
+                </h2>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                        <span class="font-medium text-gray-700">月次売上</span>
+                        <span id="monthlyRevenue" class="text-xl font-bold text-blue-600">¥0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                        <span class="font-medium text-gray-700">年間売上</span>
+                        <span id="annualRevenue" class="text-xl font-bold text-green-600">¥0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                        <span class="font-medium text-gray-700">月次営業費用</span>
+                        <span id="monthlyExpenses" class="text-xl font-bold text-red-600">¥0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <span class="font-medium text-gray-700">月次営業利益</span>
+                        <span id="monthlyProfit" class="text-xl font-bold text-purple-600">¥0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                        <span class="font-medium text-gray-700">投資回収年数</span>
+                        <span id="paybackPeriod" class="text-xl font-bold text-yellow-600">0年</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- チャート -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="card rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-line-chart text-blue-600 mr-2"></i>
+                    年間収支推移
+                </h2>
+                <div class="chart-container">
+                    <canvas id="profitChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-pie-chart text-green-600 mr-2"></i>
+                    費用構成比
+                </h2>
+                <div class="chart-container">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 投資回収分析 -->
+        <div class="card rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">
+                <i class="fas fa-trending-up text-indigo-600 mr-2"></i>
+                投資回収分析
+            </h2>
+            <div class="chart-container">
+                <canvas id="paybackChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let profitChart = null;
+        let expenseChart = null;
+        let paybackChart = null;
+
+        // 数値フォーマット関数
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ja-JP', {
+                style: 'currency',
+                currency: 'JPY',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(num);
+        }
+
+        // メイン計算関数
+        function calculateBusinessPlan() {
+            // 入力値の取得
+            const roomCount = parseInt(document.getElementById('roomCount').value) || 0;
+            const occupancyRate = parseFloat(document.getElementById('occupancyRate').value) / 100 || 0;
+            const weekdayRate = parseInt(document.getElementById('weekdayRate').value) || 0;
+            const holidayRate = parseInt(document.getElementById('holidayRate').value) || 0;
+            const otaCommission = parseFloat(document.getElementById('otaCommission').value) / 100 || 0;
+
+            // 費用項目
+            const cleaningCost = parseInt(document.getElementById('cleaningCost').value) || 0;
+            const communicationCost = parseInt(document.getElementById('communicationCost').value) || 0;
+            const consumablesCost = parseInt(document.getElementById('consumablesCost').value) || 0;
+            const linenCost = parseInt(document.getElementById('linenCost').value) || 0;
+            const laborCost = parseInt(document.getElementById('laborCost').value) || 0;
+            const depreciationCost = parseInt(document.getElementById('depreciationCost').value) || 0;
+            const propertyTax = parseInt(document.getElementById('propertyTax').value) || 0;
+            const insuranceCost = parseInt(document.getElementById('insuranceCost').value) || 0;
+            const maintenanceCost = parseInt(document.getElementById('maintenanceCost').value) || 0;
+            const utilitiesCost = parseInt(document.getElementById('utilitiesCost').value) || 0;
+
+            // 初期投資
+            const landCost = parseInt(document.getElementById('landCost').value) || 0;
+            const propertyPrice = parseInt(document.getElementById('propertyPrice').value) || 0;
+            const renovationCost = parseInt(document.getElementById('renovationCost').value) || 0;
+            const furnitureCost = parseInt(document.getElementById('furnitureCost').value) || 0;
+            const miscCost = parseInt(document.getElementById('miscCost').value) || 0;
+
+            // 売上計算
+            const weekdaysPerMonth = 22;
+            const holidaysPerMonth = 9;
+            const averageRate = (weekdayRate * weekdaysPerMonth + holidayRate * holidaysPerMonth) / (weekdaysPerMonth + holidaysPerMonth);
+            const monthlyRevenue = roomCount * (weekdaysPerMonth + holidaysPerMonth) * averageRate * occupancyRate;
+            const annualRevenue = monthlyRevenue * 12;
+
+            // 費用計算
+            const monthlyCleaning = cleaningCost * roomCount * (weekdaysPerMonth + holidaysPerMonth) * occupancyRate;
+            const monthlyOtaCommission = monthlyRevenue * otaCommission;
+            const monthlyFixedCosts = communicationCost + consumablesCost + linenCost + laborCost + depreciationCost + propertyTax + insuranceCost + maintenanceCost + utilitiesCost;
+            const monthlyExpenses = monthlyCleaning + monthlyOtaCommission + monthlyFixedCosts;
+            const annualExpenses = monthlyExpenses * 12;
+
+            // 営業利益計算
+            const monthlyProfit = monthlyRevenue - monthlyExpenses;
+            const annualProfit = monthlyProfit * 12;
+
+            // 初期投資合計
+            const totalInitialInvestment = landCost + propertyPrice + renovationCost + furnitureCost + miscCost;
+
+            // 投資回収年数
+            const paybackPeriod = annualProfit > 0 ? totalInitialInvestment / annualProfit : 0;
+
+            // 結果表示
+            document.getElementById('monthlyRevenue').textContent = formatNumber(monthlyRevenue);
+            document.getElementById('annualRevenue').textContent = formatNumber(annualRevenue);
+            document.getElementById('monthlyExpenses').textContent = formatNumber(monthlyExpenses);
+            document.getElementById('monthlyProfit').textContent = formatNumber(monthlyProfit);
+            document.getElementById('paybackPeriod').textContent = paybackPeriod.toFixed(1) + '年';
+
+            // チャート更新
+            updateCharts(monthlyRevenue, monthlyExpenses, monthlyProfit, {
+                cleaning: monthlyCleaning,
+                otaCommission: monthlyOtaCommission,
+                communication: communicationCost,
+                consumables: consumablesCost,
+                linen: linenCost,
+                labor: laborCost,
+                depreciation: depreciationCost,
+                propertyTax: propertyTax,
+                insurance: insuranceCost,
+                maintenance: maintenanceCost,
+                utilities: utilitiesCost
+            }, totalInitialInvestment, annualProfit);
+        }
+
+        // チャート更新関数
+        function updateCharts(monthlyRevenue, monthlyExpenses, monthlyProfit, expenseBreakdown, initialInvestment, annualProfit) {
+            // 年間収支推移チャート
+            const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const profitData = Array(12).fill(monthlyProfit);
+            const revenueData = Array(12).fill(monthlyRevenue);
+            const expenseData = Array(12).fill(monthlyExpenses);
+
+            if (profitChart) {
+                profitChart.destroy();
+            }
+
+            const profitCtx = document.getElementById('profitChart').getContext('2d');
+            profitChart = new Chart(profitCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: '売上',
+                        data: revenueData,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: '費用',
+                        data: expenseData,
+                        borderColor: 'rgb(239, 68, 68)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: '利益',
+                        data: profitData,
+                        borderColor: 'rgb(34, 197, 94)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '¥' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ¥' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 費用構成比チャート
+            const expenseLabels = ['清掃費', 'OTA手数料', '通信費', '消耗品費', 'リネン費', '人件費', '減価償却費', '固定資産税', '保険料', 'メンテナンス費', '水光熱費'];
+            const expenseValues = [
+                expenseBreakdown.cleaning,
+                expenseBreakdown.otaCommission,
+                expenseBreakdown.communication,
+                expenseBreakdown.consumables,
+                expenseBreakdown.linen,
+                expenseBreakdown.labor,
+                expenseBreakdown.depreciation,
+                expenseBreakdown.propertyTax,
+                expenseBreakdown.insurance,
+                expenseBreakdown.maintenance,
+                expenseBreakdown.utilities
+            ];
+
+            if (expenseChart) {
+                expenseChart.destroy();
+            }
+
+            const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+            expenseChart = new Chart(expenseCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: expenseLabels,
+                    datasets: [{
+                        data: expenseValues,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#FF9F40',
+                            '#FF6384',
+                            '#C9CBCF',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40',
+                            '#FF6384',
+                            '#36A2EB'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ¥' + context.parsed.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 投資回収チャート
+            const paybackYears = Math.ceil(initialInvestment / annualProfit) + 2;
+            const yearLabels = [];
+            const cumulativeCashFlow = [];
+            let cumulative = -initialInvestment;
+
+            for (let i = 0; i <= paybackYears; i++) {
+                yearLabels.push(`${i}年目`);
+                cumulativeCashFlow.push(cumulative);
+                if (i > 0) {
+                    cumulative += annualProfit;
+                }
+            }
+
+            if (paybackChart) {
+                paybackChart.destroy();
+            }
+
+            const paybackCtx = document.getElementById('paybackChart').getContext('2d');
+            paybackChart = new Chart(paybackCtx, {
+                type: 'bar',
+                data: {
+                    labels: yearLabels,
+                    datasets: [{
+                        label: '累積キャッシュフロー',
+                        data: cumulativeCashFlow,
+                        backgroundColor: cumulativeCashFlow.map(value => value >= 0 ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+                        borderColor: cumulativeCashFlow.map(value => value >= 0 ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '¥' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ¥' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // イベントリスナー設定
+        document.addEventListener('DOMContentLoaded', function() {
+            // 全ての入力フィールドにイベントリスナーを追加
+            const inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', calculateBusinessPlan);
+            });
+
+            // 初期計算実行
+            calculateBusinessPlan();
+        });
+    </script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDua8%2BtbnRI0rmF5BnMQHlO9K652ZyxNH4pStVRuP50fMdSd%2BW%2BmDAYaJ0goGZxwgRyYCVyxlqQgbHfDRAR2uigQPKQAtjenIEggzdNb7KIwMgfYYLpp%2Fdj7jjdO3UqnVqysibDClDqU97VZj%2BAhLFwt05vMzb4sNECtBnVqPJsGYjzaQ7SfvYpfttwZpkjCUa1YK0IRWrtdFFaMZosPeRcGWVikNeZtosyyCMhcGbOiwZjifbsQpuvgJu9q6jBTVWuW61VEe5EKO1IrdBX1EVOwL4EE5u3jtEXt4tWB%2FxkDD7ZwZUnWprLZhhKf3GTMomg8UbmILLOgzjmaqb%2BfdEHdzV1xFqKbdEUX9r5x8TCz1FYseD4on%2BtjltXf25jHREXcPZSm9u9ieH4VYOchyt%2BriIo1UREmeXIVPXt2fuRfbN%2B0ZZXVbbOEkdzYAKZfPAjr5EqMUeNZBq35CgTtkHcAJZIGZgeqRhYhyRP2i43IiJ9I%2FauHHWXHnYvEPVbx9%2F3TKcaLis2EXhiJ3X2ZyFyg%3D";
+        window.__genspark_locale = "ja-JP";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDua8+tbnRI0rmF5BnMQHlO9K652ZyxNH4pStVRuP50fMdSd+W+mDAYaJ0goGZxwgRyYCVyxlqQgbHfDRAR2uigQPKQAtjenIEggzdNb7KIwMgfYYLpp/dj7jjdO3UqnVqysibDClDqU97VZj+AhLFwt05vMzb4sNECtBnVqPJsGYjzaQ7SfvYpfttwZpkjCUa1YK0IRWrtdFFaMZosPeRcGWVikNeZtosyyCMhcGbOiwZjifbsQpuvgJu9q6jBTVWuW61VEe5EKO1IrdBX1EVOwL4EE5u3jtEXt4tWB/xkDD7ZwZUnWprLZhhKf3GTMomg8UbmILLOgzjmaqb+fdEHdzV1xFqKbdEUX9r5x8TCz1FYseD4on+tjltXf25jHREXcPZSm9u9ieH4VYOchyt+riIo1UREmeXIVPXt2fuRfbN+0ZZXVbbOEkdzYAKZfPAjr5EqMUeNZBq35CgTtkHcAJZIGZgeqRhYhyRP2i43IiJ9I/auHHWXHnYvEPVbx9/3TKcaLis2EXhiJ3X2ZyFyg=";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
